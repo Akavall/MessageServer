@@ -1,5 +1,5 @@
 from flask import Flask, session, request, url_for, redirect
-from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo_db, set_password, check_username_hashpassword, update_sender_to_receiver, update_receiver_to_sender, get_user_to_user_thread
+from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo_db, set_password, check_username_hashpassword, update_sender_to_receiver, update_receiver_to_sender, get_user_to_user_thread, make_msg_summary
 
 app = Flask(__name__)
 app.secret_key = "any random string"
@@ -12,7 +12,7 @@ def index():
         <br>
         <a href="http://127.0.0.1:5000/send">Send a Message</a>
         <br>
-        <a href="http://127.0.0.1:5000/inbox">Check Messages</a>
+        <a href="http://127.0.0.1:5000/inbox">Check Message Summary</a>
         <br>
         <a href="http://127.0.0.1:5000/user_to_user">Check Messages From specific User</a>
         <br>
@@ -77,7 +77,15 @@ def send():
     if request.method == "POST":
         sender = session["username"]
         receiver = request.form["send_to"]
+        if not receiver:
+            return "receiver user cannot be empty string"
         message = request.form["message"]
+        if not message:
+            return "message cannot be empty"
+
+        if not get_password_from_dynamo_db(receiver):
+            return "user: {} is not in database, cannot deliver message".format(receiver)
+
         update_sender_to_receiver(sender, receiver, message)
         update_receiver_to_sender(sender, receiver, message)
 
@@ -97,8 +105,9 @@ def inbox():
 
     username = session["username"]
     # users_messages = receiver_to_sender.get(username, "No messages found")
-    users_messages = get_messages_from_dynamo_db(username, "ReceverBasedMsgs")
-    return str(users_messages)
+    users_messages = get_messages_from_dynamo_db(username, "ReceiverBasedMsgs")
+    summary = make_msg_summary(users_messages)
+    return summary
 
 @app.route("/logout")
 def logout():
