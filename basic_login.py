@@ -4,11 +4,8 @@ from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo
 app = Flask(__name__)
 app.secret_key = "any random string"
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def index():
-    if request.method == "POST":
-        other_username = request.form["username"]
-        return redirect(url_for("user_to_user"))
     if "username" in session:
         username = session["username"]
         return """Logged in as {}
