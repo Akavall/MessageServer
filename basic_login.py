@@ -91,11 +91,11 @@ def send():
 
     return """
     Send a message
-    <form action = "" method = "post">
+    <form action = "" method = "post" id=sendform>
         <p>Send to:<input type = text name = send_to></p>
-        <p>Message:<input type = text name = message></p>
         <p><input type = submit value = Send></p>
     </form>
+    <textarea form ="sendform" name="message" cols="35" wrap="soft"></textarea>
     """
 
 @app.route("/inbox")
