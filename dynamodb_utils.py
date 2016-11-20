@@ -76,7 +76,7 @@ def update_sender_to_receiver(sender, receiver, message):
     table = dynamodb.Table("SenderBasedMsgs")
     timestamp = "utc time : " + str(datetime.utcnow())
     # Example of timestamp: '2016-11-20 01:06:20.681266'
-    # likelyhood of duplicate is very small
+    # likelyhood of duplicate is very small        
     my_item = {"sendername": sender,
                "timestamp": timestamp,
                "receivername": receiver,
@@ -89,6 +89,7 @@ def update_receiver_to_sender(sender, receiver, message):
     timestamp = "utc time : " + str(datetime.utcnow())
     # Example of timestamp: '2016-11-20 01:06:20.681266'
     # likelyhood of duplicate is very small
+
     my_item = {"receivername": receiver,
                "timestamp": timestamp,
                "sendername": sender,
@@ -128,5 +129,29 @@ def format_message(message):
 
 def format_all_messages(all_messages):
     return "<br>".join(format_message(m) for m in all_messages)
+
+def make_msg_summary(all_received_messages):
+    total = len(all_received_messages)
+    user_to_time = {}
+    for ele in all_received_messages:
+        user = ele["sendername"]
+        time = ele["timestamp"]
+
+        if user not in user_to_time:
+            user_to_time[user] = time
+        else:
+            if time > user_to_time[user]:
+                user_to_time[user] = time
+
+    user_to_time_sorted = sorted(user_to_time.items(), key = lambda x: x[1], reverse=True)
+
+    line_1 = "You have: {} total messages<br>".format(total)
+    line_2 = "You have messages from users:<br>"
+    
+    columns = "<br>".join("{}: {}".format(a, b) for a,b in user_to_time_sorted)
+
+    return line_1 + line_2 + "<br>" + columns
+        
+    
 
     
