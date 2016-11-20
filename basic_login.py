@@ -1,0 +1,107 @@
+from flask import Flask, session, request, url_for, redirect
+from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo_db, set_password, check_username_hashpassword, update_sender_to_receiver, update_receiver_to_sender
+
+app = Flask(__name__)
+app.secret_key = "any random string"
+
+@app.route("/")
+def index():
+    if "username" in session:
+        username = session["username"]
+        return """Logged in as {}
+        <br>
+        <a href="http://127.0.0.1:5000/send">Send a Message</a>
+        <br>
+        <a href="http://127.0.0.1:5000/inbox">Check Messages</a>
+        """.format(username)
+    return "You are not logged in"
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "POST":
+        # When we submit data it is a post request
+        username = request.form["username"]
+        password = request.form["password"]
+        
+        
+        if check_username_hashpassword(username, password):
+            session["username"] = request.form["username"]
+            return redirect(url_for("index"))
+        return "password/username combination not found"
+    
+    # When we just go to the site, it is a GET request
+    return """
+    Login page
+    <form action = "" method = "post">
+        <p><input type = text name = username></p>
+        <p><input type = password name = password></p>
+        <p><input type = submit value = Login></p>
+    </form>
+    """
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        session["username"] = request.form["username"]
+        username = request.form["username"]
+
+        if get_password_from_dynamo_db(username):
+            return "username already exists"
+
+        password = request.form["password"]
+        if len(password) < 5:
+            "password should be at least 5 characters"
+
+        set_password(username, password)
+        return redirect(url_for("login"))
+    
+    return """
+    Registration Page
+    <form action = "" method = "post">
+        <p><input type = text name = username></p>
+        <p><input type = password name = password></p>
+        <p><input type = submit value = Register></p>
+    </form>
+    """
+
+@app.route("/send", methods=["GET", "POST"])
+def send():
+    if "username" not in session:
+        return "You are not logged in"
+
+    if request.method == "POST":
+        sender = session["username"]
+        receiver = request.form["send_to"]
+        message = request.form["message"]
+        update_sender_to_receiver(sender, receiver, message)
+        update_receiver_to_sender(sender, receiver, message)
+
+    return """
+    Send a message
+    <form action = "" method = "post">
+        <p>Send to:<input type = text name = send_to></p>
+        <p>Message:<input type = text name = message></p>
+        <p><input type = submit value = Send></p>
+    </form>
+    """
+
+@app.route("/inbox")
+def inbox():
+    if "username" not in session:
+        return "You are not logged in"
+
+    username = session["username"]
+    # users_messages = receiver_to_sender.get(username, "No messages found")
+    users_messages = get_messages_from_dynamo_db(username)
+    return str(users_messages)
+
+@app.route("/logout")
+def logout():
+    session.pop("username", None)
+    return redirect(url_for("index"))
+
+if __name__ == "__main__":
+    app.run()
+
