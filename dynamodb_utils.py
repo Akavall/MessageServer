@@ -5,21 +5,27 @@ from datetime import datetime
 
 dynamodb = boto3.resource("dynamodb", region_name="us-west-2")
 
-def get_messages_from_dynamo_db(username):
-    table = dynamodb.Table("ReceiverBasedMsgs")
+def get_messages_from_dynamo_db(username, table_name):
+    table = dynamodb.Table(table_name)
+
+    #TODO: this probably can be improved
+    if table_name == "ReceiverBasedMsgs":
+        key_schema_element = "receivername"
+    elif table_name == "SenderBasedMsgs":
+        key_schema_element = "sendername"
     
     try:
         response = table.query(
-            KeyConditionExpression=Key("receivername").eq(username)
+            KeyConditionExpression=Key(key_schema_element).eq(username)
         )
 
-        print "Request for Table: ReceiverBasedMsgs, user: {} was successful".format(username)
+        print "Request for Table: {}, user: {} was successful".format(table_name, username)
 
         if "Items" in response:
-            print "{} for Table: ReceiverBasedMsgs was found in database".format(username)
+            print "{} for Table: {} was found in database".format(table_name, username)
             return response["Items"]
         else:
-            print "{} for Table: ReceiverBasedMsgs was NOT found in the database".format(username)
+            print "{} for Table: {} was NOT found in the database".format(table_name, username)
             return None 
 
     except Exception as exc:
@@ -89,3 +95,38 @@ def update_receiver_to_sender(sender, receiver, message):
                "message": message[:1000]}
     table.put_item(Item=my_item)
     print "writing message to ReceiverBasedMsgs receiver: {}, sender {}".format(receiver, sender)
+
+def get_user_to_user_thread(action_user, other_user):
+    sent_messages = get_messages_from_dynamo_db(action_user, "SenderBasedMsgs")
+    
+    sent_messages_to_other = [m for m in sent_messages if m["receivername"] == other_user]
+
+    received_messages = get_messages_from_dynamo_db(action_user, "ReceiverBasedMsgs")
+
+    received_messages_from_other = [m for m in received_messages if m["sendername"] == other_user]
+
+    all_messages = sent_messages_to_other + received_messages_from_other
+
+    all_messages.sort(key = lambda x: x["timestamp"], reverse=True)
+
+    if not all_messages:
+        return "There are no messages between: {} and {}".format(action_user, other_user)
+
+    # can't return list of dicts here
+    return format_all_messages(all_messages)
+
+def format_message(message):
+    timestamp = message["timestamp"]
+    sender = message["sendername"]
+    receiver = message["receivername"]
+    message = message["message"]
+    msg = """timestamp: {}<br>
+             sender: {}<br>
+             receiver: {}<br>
+             message: {}<br>""".format(timestamp, sender, receiver, message)
+    return msg
+
+def format_all_messages(all_messages):
+    return "<br>".join(format_message(m) for m in all_messages)
+
+    

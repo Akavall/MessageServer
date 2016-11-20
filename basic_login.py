@@ -1,5 +1,5 @@
 from flask import Flask, session, request, url_for, redirect
-from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo_db, set_password, check_username_hashpassword, update_sender_to_receiver, update_receiver_to_sender
+from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo_db, set_password, check_username_hashpassword, update_sender_to_receiver, update_receiver_to_sender, get_user_to_user_thread
 
 app = Flask(__name__)
 app.secret_key = "any random string"
@@ -13,7 +13,10 @@ def index():
         <a href="http://127.0.0.1:5000/send">Send a Message</a>
         <br>
         <a href="http://127.0.0.1:5000/inbox">Check Messages</a>
-        """.format(username)
+        <br>
+        <a href="http://127.0.0.1:5000/user_to_user">Check Messages From specific User</a>
+        <br>
+        """.format(username)  
     return "You are not logged in"
 
 @app.route("/login", methods=["GET", "POST"])
@@ -94,7 +97,7 @@ def inbox():
 
     username = session["username"]
     # users_messages = receiver_to_sender.get(username, "No messages found")
-    users_messages = get_messages_from_dynamo_db(username)
+    users_messages = get_messages_from_dynamo_db(username, "ReceverBasedMsgs")
     return str(users_messages)
 
 @app.route("/logout")
@@ -102,6 +105,20 @@ def logout():
     session.pop("username", None)
     return redirect(url_for("index"))
 
+@app.route("/user_to_user", methods=["GET", "POST"])
+def user_to_user():
+    if request.method == "POST":
+        other_user = request.form["username"]
+        user_to_user_thread = get_user_to_user_thread(session["username"], other_user)
+        return user_to_user_thread
+    return """  
+        Check messages from user:
+        <form action = "" method = "post">
+            <p><input type = text name = username></p>
+            <p><input type="submit" value="submit"></p>
+        </form>
+    """
+    
 if __name__ == "__main__":
     app.run()
 
