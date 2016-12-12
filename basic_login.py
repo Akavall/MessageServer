@@ -1,5 +1,6 @@
 from flask import Flask, session, request, url_for, redirect
-from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo_db, set_password, check_username_hashpassword, update_sender_to_receiver, update_receiver_to_sender, get_user_to_user_thread, make_msg_summary
+from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo_db, set_password, check_username_hashpassword, update_sender_to_receiver, update_receiver_to_sender, get_user_to_user_thread
+from utilities import make_msg_summary
 
 app = Flask(__name__)
 app.secret_key = "any random string"
