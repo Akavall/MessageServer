@@ -3,6 +3,8 @@ from boto3.dynamodb.conditions import Key
 import bcrypt
 from datetime import datetime
 
+from utilities import format_all_messages
+
 dynamodb = boto3.resource("dynamodb", region_name="us-west-2")
 
 def get_messages_from_dynamo_db(username, table_name):
@@ -72,7 +74,7 @@ def check_username_hashpassword(username, password):
         return True
     return False
 
-def update_sender_to_receiver(sender, receiver, message):
+def update_sender_to_receiver(sender, receiver, receivers, message):
     table = dynamodb.Table("SenderBasedMsgs")
     timestamp = "utc time : " + str(datetime.utcnow())
     # Example of timestamp: '2016-11-20 01:06:20.681266'
@@ -80,11 +82,12 @@ def update_sender_to_receiver(sender, receiver, message):
     my_item = {"sendername": sender,
                "timestamp": timestamp,
                "receivername": receiver,
+               "all_receivers": receivers,
                "message": message[:1000]}
     table.put_item(Item=my_item)
     print "writing message to SenderBasedMsgs, receiver: {}, sender {}".format(receiver, sender)
 
-def update_receiver_to_sender(sender, receiver, message):
+def update_receiver_to_sender(sender, receiver, receivers, message):
     table = dynamodb.Table("ReceiverBasedMsgs")
     timestamp = "utc time : " + str(datetime.utcnow())
     # Example of timestamp: '2016-11-20 01:06:20.681266'
@@ -93,6 +96,7 @@ def update_receiver_to_sender(sender, receiver, message):
     my_item = {"receivername": receiver,
                "timestamp": timestamp,
                "sendername": sender,
+               "all_receivers": receivers,
                "message": message[:1000]}
     table.put_item(Item=my_item)
     print "writing message to ReceiverBasedMsgs receiver: {}, sender {}".format(receiver, sender)
@@ -112,46 +116,9 @@ def get_user_to_user_thread(action_user, other_user):
 
     if not all_messages:
         return "There are no messages between: {} and {}".format(action_user, other_user)
-
     # can't return list of dicts here
     return format_all_messages(all_messages)
 
-def format_message(message):
-    timestamp = message["timestamp"]
-    sender = message["sendername"]
-    receiver = message["receivername"]
-    message = message["message"]
-    msg = """timestamp: {}<br>
-             sender: {}<br>
-             receiver: {}<br>
-             message: {}<br>""".format(timestamp, sender, receiver, message)
-    return msg
-
-def format_all_messages(all_messages):
-    return "<br>".join(format_message(m) for m in all_messages)
-
-def make_msg_summary(all_received_messages):
-    total = len(all_received_messages)
-    user_to_time = {}
-    for ele in all_received_messages:
-        user = ele["sendername"]
-        time = ele["timestamp"]
-
-        if user not in user_to_time:
-            user_to_time[user] = time
-        else:
-            if time > user_to_time[user]:
-                user_to_time[user] = time
-
-    user_to_time_sorted = sorted(user_to_time.items(), key = lambda x: x[1], reverse=True)
-
-    line_1 = "You have: {} total messages<br>".format(total)
-    line_2 = "You have messages from users:<br>"
-    
-    columns = "<br>".join("{}: {}".format(a, b) for a,b in user_to_time_sorted)
-
-    return line_1 + line_2 + "<br>" + columns
-        
-    
+   
 
     

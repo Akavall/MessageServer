@@ -77,18 +77,28 @@ def send():
 
     if request.method == "POST":
         sender = session["username"]
-        receiver = request.form["send_to"]
-        if not receiver:
+        receivers = request.form["send_to"]
+        receivers_list = receivers.split()
+        if not receivers:
             return "receiver user cannot be empty string"
         message = request.form["message"]
         if not message:
             return "message cannot be empty"
 
-        if not get_password_from_dynamo_db(receiver):
-            return "user: {} is not in database, cannot deliver message".format(receiver)
+        sent_message_to = []
+        not_sent_message_to = []
+        for receiver in receivers_list:
+            if not get_password_from_dynamo_db(receiver):
+                not_sent_message_to.append(receiver)
+            else:
+                update_sender_to_receiver(sender, receiver, receivers, message)
+                update_receiver_to_sender(sender, receiver, receivers, message)
+                sent_message_to.append(receiver)
 
-        update_sender_to_receiver(sender, receiver, message)
-        update_receiver_to_sender(sender, receiver, message)
+        sent_string = ",".join(sent_message_to)
+        not_sent_string = ".".join(not_sent_message_to)
+
+        return "Sent to: {} <BR> Did not sent to: {}".format(sent_string, not_sent_string)
 
     return """
     Send a message
