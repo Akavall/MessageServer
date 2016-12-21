@@ -3,7 +3,7 @@ from boto3.dynamodb.conditions import Key
 import bcrypt
 from datetime import datetime
 
-from utilities import format_all_messages
+from utilities import format_all_messages, encrypt_message
 
 dynamodb = boto3.resource("dynamodb", region_name="us-west-2")
 
@@ -83,7 +83,7 @@ def update_sender_to_receiver(sender, receiver, receivers, message):
                "timestamp": timestamp,
                "receivername": receiver,
                "all_receivers": receivers,
-               "message": message[:1000]}
+               "message": encrypt_message(message[:1000], receiver)}
     table.put_item(Item=my_item)
     print "writing message to SenderBasedMsgs, receiver: {}, sender {}".format(receiver, sender)
 
@@ -97,7 +97,7 @@ def update_receiver_to_sender(sender, receiver, receivers, message):
                "timestamp": timestamp,
                "sendername": sender,
                "all_receivers": receivers,
-               "message": message[:1000]}
+               "message": encrypt_message(message[:1000], receiver)}
     table.put_item(Item=my_item)
     print "writing message to ReceiverBasedMsgs receiver: {}, sender {}".format(receiver, sender)
 
