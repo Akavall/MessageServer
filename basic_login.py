@@ -1,4 +1,4 @@
-from flask import Flask, session, request, url_for, redirect
+from flask import Flask, session, request, url_for, redirect, render_template
 from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo_db, set_password, check_username_hashpassword, update_sender_to_receiver, update_receiver_to_sender, get_user_to_user_thread
 from utilities import make_msg_summary
 
@@ -9,15 +9,7 @@ app.secret_key = "any random string"
 def index():
     if "username" in session:
         username = session["username"]
-        return """Logged in as {}
-        <br>
-        <a href="http://127.0.0.1:5000/send">Send a Message</a>
-        <br>
-        <a href="http://127.0.0.1:5000/inbox">Check Message Summary</a>
-        <br>
-        <a href="http://127.0.0.1:5000/user_to_user">Check Messages From specific User</a>
-        <br>
-        """.format(username)  
+        return render_template("index.html")       
     return "You are not logged in"
 
 @app.route("/login", methods=["GET", "POST"])
