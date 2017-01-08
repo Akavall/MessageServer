@@ -132,8 +132,11 @@ def user_to_user():
     if request.method == "POST":
         other_user = request.form["username"]
         user_to_user_thread = get_user_to_user_thread(session["username"], other_user)
-        return user_to_user_thread
-    return """  
+        return render_template("user_to_user_post.html", data=Markup(user_to_user_thread))
+    return render_template("user_to_user_get.html")
+    
+    """  
+
         Check messages from user:
         <form action = "" method = "post">
             <p><input type = text name = username></p>
