@@ -10,7 +10,7 @@ def index():
     if "username" in session:
         username = session["username"]
         return render_template("index.html", username=username)       
-    return "You are not logged in"
+    return render_template("index_register_login.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
