@@ -73,13 +73,14 @@ def send():
         receivers_list = receivers.split()
         if not receivers:
             
-            return render_template("send_info.html", message="receiver user cannot be empty string")
+            return render_template("send_info.html", data=Markup("receiver user cannot be empty string"))
         message = request.form["message"]
         if not message:
-            return render_template("send_info.html", message="message cannot be empty")
+            return render_template("send_info.html", data=Markup("message cannot be empty"))
 
         sent_message_to = []
         not_sent_message_to = []
+
         for receiver in receivers_list:
             if not get_password_from_dynamo_db(receiver):
                 not_sent_message_to.append(receiver)
