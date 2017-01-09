@@ -1,4 +1,4 @@
-from flask import Flask, session, request, url_for, redirect
+from flask import Flask, session, request, url_for, redirect, render_template, Markup
 from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo_db, set_password, check_username_hashpassword, update_sender_to_receiver, update_receiver_to_sender, get_user_to_user_thread
 from utilities import make_msg_summary
 
@@ -9,16 +9,8 @@ app.secret_key = "any random string"
 def index():
     if "username" in session:
         username = session["username"]
-        return """Logged in as {}
-        <br>
-        <a href="http://127.0.0.1:5000/send">Send a Message</a>
-        <br>
-        <a href="http://127.0.0.1:5000/inbox">Check Message Summary</a>
-        <br>
-        <a href="http://127.0.0.1:5000/user_to_user">Check Messages From specific User</a>
-        <br>
-        """.format(username)  
-    return "You are not logged in"
+        return render_template("index.html", username=username)       
+    return render_template("index_register_login.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -80,13 +72,15 @@ def send():
         receivers = request.form["send_to"]
         receivers_list = receivers.split()
         if not receivers:
-            return "receiver user cannot be empty string"
+            
+            return render_template("send_info.html", data=Markup("receiver user cannot be empty string"))
         message = request.form["message"]
         if not message:
-            return "message cannot be empty"
+            return render_template("send_info.html", data=Markup("message cannot be empty"))
 
         sent_message_to = []
         not_sent_message_to = []
+
         for receiver in receivers_list:
             if not get_password_from_dynamo_db(receiver):
                 not_sent_message_to.append(receiver)
@@ -98,9 +92,16 @@ def send():
         sent_string = ",".join(sent_message_to)
         not_sent_string = ".".join(not_sent_message_to)
 
-        return "Sent to: {} <BR> Did not sent to: {}".format(sent_string, not_sent_string)
+        line_break = "<BR>"
 
-    return """
+        # What I am sending is not interpreted by html
+        # Good is some way, but bad that I don't know how to format it!
+        my_data = Markup("Sent to: {} {} Did not sent to: {}".format(sent_string, line_break, not_sent_string ) )
+        rendered_message = render_template("send_info.html", data=my_data)
+
+        return rendered_message 
+
+    html_format = """
     Send a message
     <form action = "" method = "post" id=sendform>
         <p>Send to:<input type = text name = send_to></p>
@@ -108,6 +109,8 @@ def send():
     </form>
     <textarea form ="sendform" name="message" cols="35" wrap="soft"></textarea>
     """
+
+    return render_template("send.html")
 
 @app.route("/inbox")
 def inbox():
@@ -118,7 +121,7 @@ def inbox():
     # users_messages = receiver_to_sender.get(username, "No messages found")
     users_messages = get_messages_from_dynamo_db(username, "ReceiverBasedMsgs")
     summary = make_msg_summary(users_messages)
-    return summary
+    return render_template("inbox.html", data=Markup(summary))
 
 @app.route("/logout")
 def logout():
@@ -130,8 +133,11 @@ def user_to_user():
     if request.method == "POST":
         other_user = request.form["username"]
         user_to_user_thread = get_user_to_user_thread(session["username"], other_user)
-        return user_to_user_thread
-    return """  
+        return render_template("user_to_user_post.html", data=Markup(user_to_user_thread))
+    return render_template("user_to_user_get.html")
+    
+    """  
+
         Check messages from user:
         <form action = "" method = "post">
             <p><input type = text name = username></p>
