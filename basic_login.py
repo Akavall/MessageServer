@@ -46,22 +46,20 @@ def register():
         if get_password_from_dynamo_db(username):
             return "username already exists"
 
-        password = request.form["password"]
+        password = request.form["password1"]
         if len(password) < 5:
-            "password should be at least 5 characters"
+            return "password should be at least 5 characters"
+        if " " in password:
+            return "password may not contain spaces"
+
+        password2 = request.form["password2"]
+        if password != password2:
+            return "Entered passwords do not match"
 
         set_password(username, password)
         return redirect(url_for("login"))
+    return render_template("registration.html")
     
-    return """
-    Registration Page
-    <form action = "" method = "post">
-        <p><input type = text name = username></p>
-        <p><input type = password name = password></p>
-        <p><input type = submit value = Register></p>
-    </form>
-    """
-
 @app.route("/send", methods=["GET", "POST"])
 def send():
     if "username" not in session:
