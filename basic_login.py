@@ -88,13 +88,16 @@ def send():
                 sent_message_to.append(receiver)
 
         sent_string = ",".join(sent_message_to)
-        not_sent_string = ".".join(not_sent_message_to)
+        not_sent_string = ",".join(not_sent_message_to)
 
         line_break = "<BR>"
 
         # What I am sending is not interpreted by html
         # Good is some way, but bad that I don't know how to format it!
-        my_data = Markup("Sent to: {} {} Did not sent to: {}".format(sent_string, line_break, not_sent_string ) )
+        if not_sent_string:
+            my_data = Markup("Sent to: {} {} Did not sent to: {}".format(sent_string, line_break, not_sent_string ) )
+        else:
+            my_data = Markup("Sent to: {}".format(sent_string))
         rendered_message = render_template("send_info.html", data=my_data)
 
         return rendered_message 
