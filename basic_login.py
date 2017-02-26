@@ -1,4 +1,7 @@
 from flask import Flask, session, request, url_for, redirect, render_template, Markup
+import logging
+from logging.config import fileConfig
+
 from dynamodb_utils import get_messages_from_dynamo_db, get_password_from_dynamo_db, set_password, check_username_hashpassword, update_sender_to_receiver, update_receiver_to_sender, get_user_to_user_thread
 from utilities import make_msg_summary
 
@@ -147,5 +150,6 @@ def user_to_user():
     """
     
 if __name__ == "__main__":
+    fileConfig('log_config.ini')    
     app.run(host="0.0.0.0", port=8090)
 

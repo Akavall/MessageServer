@@ -2,6 +2,7 @@ import boto3
 from boto3.dynamodb.conditions import Key
 import bcrypt
 from datetime import datetime
+import logging
 
 from utilities import format_all_messages, encrypt_message
 
@@ -21,34 +22,34 @@ def get_messages_from_dynamo_db(username, table_name):
             KeyConditionExpression=Key(key_schema_element).eq(username)
         )
 
-        print "Request for Table: {}, user: {} was successful".format(table_name, username)
+        logging.info("Request for Table: {}, user: {} was successful".format(table_name, username))
 
         if "Items" in response:
-            print "{} for Table: {} was found in database".format(table_name, username)
+            logging.info("{} for Table: {} was found in database".format(table_name, username))
             return response["Items"]
         else:
-            print "{} for Table: {} was NOT found in the database".format(table_name, username)
+            logging.info("{} for Table: {} was NOT found in the database".format(table_name, username))
             return None 
 
     except Exception as exc:
-        print "The request failed, Error: {}".format(exc)
+        logging.error("The request failed, Error: {}".format(exc))
 
 def get_password_from_dynamo_db(username):
     table = dynamodb.Table("Passwords")
     try:
         response = table.get_item(Key={"username": username})
 
-        print "Request for {} was successful".format(username)
+        logging.info("Request for {} was successful".format(username))
 
         if "Item" in response:
-            print "{} was found in database".format(username)
+            logging.info("{} was found in database".format(username))
             return response["Item"]
         else:
-            print "{} was NOT found in the database".format(username)
+            logging.info("{} was NOT found in the database".format(username))
             return None 
 
     except Exception as exc:
-        print "The request failed, Error: {}".format(exc)
+        logging.error("The request failed, Error: {}".format(exc))
 
 def set_password(username, password):
     my_salt = bcrypt.gensalt().encode("utf-8")
@@ -85,7 +86,7 @@ def update_sender_to_receiver(sender, receiver, receivers, message):
                "all_receivers": receivers,
                "message": encrypt_message(message[:1000], receiver)}
     table.put_item(Item=my_item)
-    print "writing message to SenderBasedMsgs, receiver: {}, sender {}".format(receiver, sender)
+    logging.info("writing message to SenderBasedMsgs, receiver: {}, sender {}".format(receiver, sender))
 
 def update_receiver_to_sender(sender, receiver, receivers, message):
     table = dynamodb.Table("ReceiverBasedMsgs")
@@ -99,7 +100,7 @@ def update_receiver_to_sender(sender, receiver, receivers, message):
                "all_receivers": receivers,
                "message": encrypt_message(message[:1000], receiver)}
     table.put_item(Item=my_item)
-    print "writing message to ReceiverBasedMsgs receiver: {}, sender {}".format(receiver, sender)
+    logging.info("writing message to ReceiverBasedMsgs receiver: {}, sender {}".format(receiver, sender))
 
 def get_user_to_user_thread(action_user, other_user):
     sent_messages = get_messages_from_dynamo_db(action_user, "SenderBasedMsgs")
