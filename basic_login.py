@@ -76,6 +76,9 @@ def send():
             
             return render_template("send_info.html", data=Markup("receiver user cannot be empty string"))
         message = request.form["message"]
+        # encrpython algorithms cannot handle non ascii characters
+        # so we are removing them
+        message = "".join(ele if ord(ele) < 128 else "#" for ele in message)
         if not message:
             return render_template("send_info.html", data=Markup("message cannot be empty"))
 
